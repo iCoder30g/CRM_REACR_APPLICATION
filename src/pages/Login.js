@@ -1,13 +1,15 @@
 import React, { useState } from 'react'
 import { Dropdown, DropdownButton } from "react-bootstrap"
-import {userSignup, userSignin} from "../api/auth";
+import { userSignup, userSignin } from "../api/auth";
+import {useNavigate} from "react-router-dom";
 
 
 function Login() {
     const [showSignup, setShowSignup] = useState(false);
+    const [message, setMessage] = useState("")
     const [userType, setUserType] = useState("CUSTOMER");
     const [userSignupData, setUserSignupData] = useState({});
-    const [message, setMessage] = useState("")
+    
 
     const toggleSignup = () => {
         setShowSignup(!showSignup)
@@ -32,26 +34,34 @@ function Login() {
             name: username,
             userId: userId,
             email: email,
-            userType: userType,
+            userTypes: userType,
             password: password
         }
         console.log("DATA", data);
-        
+
         e.preventDefault();
 
-        userSignup(data).then(function(response){
-            if(response.status===201) {
-                window.location.href = "/"
+        userSignup(data).then(function (response) {
+            if (response.status === 201) {
+                history(0);
+            }
+            if (response === 204) {
+                history(0)
             }
         })
-        .catch(function(error){
-            if(error.response.state===400) {
-                setMessage(error.response.data.message)
-            } else {
-                console.log(error);
-            }
-        })
+            .catch(function (error) {
+                if (error.response.state === 400) {
+                    setMessage(error.response.data.message)
+                } else {
+                    console.log(error);
+                }
+            })
     }
+
+
+    let history = useNavigate()
+
+    
 
 
 
@@ -64,19 +74,40 @@ function Login() {
             password: Password
         }
 
-        userSignin(data).then(function(response){
-            if(response.status===200){
-                // userId, email, userType, userStatus, token
-                localStorage.setItem("name", response.data.name);
+        e.preventDefault();
+        console.log(data);
+
+        userSignin(data).then(function (response) {
+            console.log(response);
+            if (response.status === 200) {
+
+                if (response.data.message) {
+                    setMessage(response.data.message)
+                } else {
+                    localStorage.setItem("name", response.data.name);
+                    localStorage.setItem("userId", response.data.userId);
+                    localStorage.setItem("email", response.data.email);
+                    localStorage.setItem("userTypes", response.data.userTypes);
+                    localStorage.setItem("userStatus", response.data.userStatus);
+                    localStorage.setItem("token", response.data.accessToken);
+
+                    if (response.data.userTypes === "CUSTOMER") {
+                        history("/customer")
+                    } else if (response.data.userTypes === "ENGINEER") {
+                        history("/engineer")
+                    } else {
+                        history("/admin")
+                    }
+                }
+
             }
-            if(response.data.userType==="CUSTOMER"){
-                window.location.href = "/customer"
-            }
-        }).catch(function(error){
-            if(error.response.state===400) {
+
+        }).catch(function (error) {
+            if (error.response.state === 400) {
                 setMessage(error.response.data.message)
             } else {
                 console.log(error);
+                setMessage(error.response.data.message)
             }
         })
 
@@ -105,6 +136,7 @@ function Login() {
                                         </div>
                                         <div className="text-info text-center" onClick={toggleSignup}>Don't have an account ? SignUP
                                         </div>
+                                        <div className="text-danger">{message}</div>
                                     </form>
                                 </div>
 
@@ -158,3 +190,4 @@ function Login() {
 
 
 export default Login;
+
